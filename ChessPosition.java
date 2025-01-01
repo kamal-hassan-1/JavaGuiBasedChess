@@ -1,4 +1,6 @@
-class ChessPosition {
+import java.io.Serializable;
+
+public class ChessPosition implements Serializable {
     private int file;
     private int rank;
 
@@ -16,16 +18,28 @@ class ChessPosition {
     }
 
     static boolean isValidPosition(int file, int rank) {
-        if (file < 1 || file > 8) return false;
-        if (rank < 1 || rank > 8) return false;
+        if (file < 1 || file > 8)
+            return false;
+        if (rank < 1 || rank > 8)
+            return false;
         return true;
     }
 
-    int getFile() { return this.file; }
-    int getRank() { return this.rank; }
+    int getFile() {
+        return this.file;
+    }
 
-    void setFile(int file) { this.setPosition(file, this.rank); }
-    void setRank(int rank) { this.setPosition(this.file, rank); }
+    int getRank() {
+        return this.rank;
+    }
+
+    void setFile(int file) {
+        this.setPosition(file, this.rank);
+    }
+
+    void setRank(int rank) {
+        this.setPosition(this.file, rank);
+    }
 
     @Override
     public boolean equals(Object obj) {

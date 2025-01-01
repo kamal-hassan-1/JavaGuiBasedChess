@@ -1,17 +1,17 @@
-import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.io.Serializable;
+import java.util.*;
+import javax.imageio.ImageIO;
+import javax.swing.*;
 
-public class ChessGUI {
+public class ChessGUI implements Serializable {
     private ChessBoard board;
     private char currentPlayerColor;
-    private JButton[][] boardButtons;
-    private JLabel statusLabel;
-    private JLabel capturedWhite;
-    private JLabel capturedBlack;
+    private transient JButton[][] boardButtons;
+    private transient JLabel statusLabel;
+    private transient JLabel capturedWhite;
+    private transient JLabel capturedBlack;
     private ChessPosition selectedPosition;
 
     public ChessGUI(ChessBoard board) {
@@ -24,16 +24,13 @@ public class ChessGUI {
     }
 
     protected void createAndShowGUI() {
-        // Create main window
         JFrame frame = new JFrame("Chess Game");
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        // Panel for chessboard
         JPanel boardPanel = new JPanel(new GridLayout(8, 8));
         frame.add(boardPanel, BorderLayout.CENTER);
 
-        // Initialize board buttons
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 boardButtons[i][j] = new JButton();
@@ -41,7 +38,6 @@ public class ChessGUI {
                 boardButtons[i][j].setFocusPainted(false);
                 boardButtons[i][j].setBackground((i + j) % 2 == 0 ? Color.LIGHT_GRAY : Color.DARK_GRAY);
 
-                // Add action listener for each button
                 int row = i;
                 int col = j;
                 boardButtons[i][j].addActionListener(e -> handlePieceClick(row, col));
@@ -49,8 +45,6 @@ public class ChessGUI {
                 boardPanel.add(boardButtons[i][j]);
             }
         }
-
-        // Panel for capturing pieces and current player's turn
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.add(statusLabel);
@@ -64,50 +58,97 @@ public class ChessGUI {
 
         frame.add(infoPanel, BorderLayout.SOUTH);
 
-        // Set initial board display
+        // game save panel on my right hand
+        JPanel gameSavePlan = new JPanel();
+        gameSavePlan.setLayout(new BoxLayout(gameSavePlan, BoxLayout.Y_AXIS));
+
+        JLabel saveLabel = new JLabel("Save Game:");
+        saveLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        gameSavePlan.add(saveLabel);
+
+        JButton saveButton = new JButton("Save And Exit");
+        saveButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        saveButton.addActionListener(e -> {
+            ChessGame.writeDataToFile(this);
+            JOptionPane.showMessageDialog(frame, "game is gonna exit");
+            System.exit(1);
+        });
+        gameSavePlan.add(saveButton);
+
+        frame.add(gameSavePlan, BorderLayout.EAST);
+
         renderBoard();
 
-        // Finalize frame
+
         frame.setSize(800, 800);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setLocationRelativeTo(null); // Center the window
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
+    protected static void rerunGUI(ChessGUI obj) {
+        obj.boardButtons = new JButton[8][8];
+        obj.statusLabel = new JLabel((obj.currentPlayerColor == 'w' ? "White's" : "Black's") + " move", JLabel.CENTER);
+        obj.statusLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        obj.capturedWhite = new JLabel();
+        obj.capturedBlack = new JLabel();
 
-
-
-    protected void rerunGUI() {
-        JFrame frame = new JFrame("Chess Game");
+        JFrame frame = new JFrame("Saved Chess Game");
         frame.setLayout(new BorderLayout());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
         JPanel boardPanel = new JPanel(new GridLayout(8, 8));
         frame.add(boardPanel, BorderLayout.CENTER);
-        for(int i = 0; i<8; i++){
-            for(int j=0; j<8; j++){
-                boardPanel.add(boardButtons[i][j]);
+
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                obj.boardButtons[i][j] = new JButton();
+                obj.boardButtons[i][j].setSize(100, 100);
+                obj.boardButtons[i][j].setFocusPainted(false);
+                obj.boardButtons[i][j]
+                        .setBackground((i + j) % 2 == 0 ? new Color(210, 165, 120) : new Color(175, 115, 70));
+
                 int row = i;
                 int col = j;
-                boardButtons[i][j].addActionListener(e -> handlePieceClick(row, col));
+                obj.boardButtons[i][j].addActionListener(e -> obj.handlePieceClick(row, col));
+
+                boardPanel.add(obj.boardButtons[i][j]);
             }
         }
+
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoPanel.add(statusLabel);
+        infoPanel.add(obj.statusLabel);
 
         JPanel capturedPanel = new JPanel(new GridLayout(1, 2));
-        capturedPanel.add(capturedWhite);
-        capturedPanel.add(capturedBlack);
+        capturedPanel.add(obj.capturedWhite);
+        capturedPanel.add(obj.capturedBlack);
         infoPanel.add(capturedPanel);
 
         frame.add(infoPanel, BorderLayout.SOUTH);
 
-        // Set initial board display
-        renderBoard();
+        JPanel gameSavePlan = new JPanel();
+        gameSavePlan.setLayout(new BoxLayout(gameSavePlan, BoxLayout.Y_AXIS));
 
-        // Finalize frame
+        JLabel saveLabel = new JLabel("Save Game:");
+        saveLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        gameSavePlan.add(saveLabel);
+
+        JButton saveButton = new JButton("Save And Exit");
+        saveButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        saveButton.addActionListener(e -> {
+            ChessGame.writeDataToFile(obj);
+            JOptionPane.showMessageDialog(frame, "game is gonna exit");
+            System.exit(1);
+        });
+        gameSavePlan.add(saveButton);
+
+        frame.add(gameSavePlan, BorderLayout.EAST);
+
+        obj.renderBoard();
+
         frame.setSize(800, 800);
-        frame.setLocationRelativeTo(null); // Center the window
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
@@ -121,43 +162,37 @@ public class ChessGUI {
                     boardButtons[i][j].setIcon(null);
                 }
 
-                if (selectedPosition != null && selectedPosition.getRank() == (8 - i) && selectedPosition.getFile() == (j + 1)) {
+                if (selectedPosition != null && selectedPosition.getRank() == (8 - i)
+                        && selectedPosition.getFile() == (j + 1)) {
                     boardButtons[i][j].setBackground(Color.WHITE);
                 } else {
-                    boardButtons[i][j].setBackground((i + j) % 2 == 0 ? new Color(210,165,120) : new Color(175,115,70));
+                    boardButtons[i][j].setBackground((i + j) % 2 == 0 ? new Color(210, 165, 120) : new Color(175, 115, 70));
                 }
             }
         }
-
-        // Update the status label with the captured pieces
         capturedWhite.setText("Captured by white: " + ChessBoard.capturedByWhite.toString());
         capturedBlack.setText("Captured by black: " + ChessBoard.capturedByBlack.toString());
         statusLabel.setText((currentPlayerColor == 'w' ? "White's" : "Black's") + " move");
-        
+
     }
 
     private void handlePieceClick(int row, int col) {
-        // Convert the button click to chess coordinates
         ChessPiece piece = board.pieces[row][col];
         if (selectedPosition == null) {
-            // First click: select a piece
             if (piece != null && piece.getColor() == currentPlayerColor) {
                 selectedPosition = new ChessPosition(col + 1, 8 - row);
                 renderBoard();
             }
         } else {
-            // Second click: move the selected piece
             ChessPosition destination = new ChessPosition(col + 1, 8 - row);
             if (isValidMove(selectedPosition, destination)) {
                 movePiece(selectedPosition, destination);
-                selectedPosition = null; // Clear selection after moving
+                selectedPosition = null;
                 renderBoard();
-                // Change turn
                 currentPlayerColor = (currentPlayerColor == 'w') ? 'b' : 'w';
             } else {
-                // Invalid move
                 JOptionPane.showMessageDialog(null, "Invalid move!");
-                selectedPosition = null;  // Clear selection on invalid move
+                selectedPosition = null;
                 renderBoard();
             }
         }
@@ -172,7 +207,6 @@ public class ChessGUI {
     private void movePiece(ChessPosition start, ChessPosition end) {
         ChessPiece piece = board.pieces[8 - start.getRank()][start.getFile() - 1];
 
-        // Capture any piece at destination
         if (board.isThereAPiece(end.getRank(), end.getFile())) {
             ChessPiece capturedPiece = board.pieces[8 - end.getRank()][end.getFile() - 1];
             if (capturedPiece.color == 'w') {
@@ -182,15 +216,14 @@ public class ChessGUI {
             }
         }
 
-        // Move the piece on the board
         board.pieces[8 - start.getRank()][start.getFile() - 1] = null;
         board.pieces[8 - end.getRank()][end.getFile() - 1] = piece;
         piece.position = end;
     }
 
-    public static String givePath(String name, char color) {
-        String[] blackIconsPath = {"images\\b-king", "images\\b-queen", "images\\b-rook", "images\\b-bishop", "images\\b-knight", "images\\b-pawn"};
-        String[] whiteIconsPath = {"images\\w-king", "images\\w-queen", "images\\w-rook", "images\\w-bishop", "images\\w-knight", "images\\w-pawn"};
+    public String givePath(String name, char color) {
+        String[] blackIconsPath = { "images\\b-king", "images\\b-queen", "images\\b-rook", "images\\b-bishop", "images\\b-knight", "images\\b-pawn" };
+        String[] whiteIconsPath = { "images\\w-king", "images\\w-queen", "images\\w-rook", "images\\w-bishop", "images\\w-knight", "images\\w-pawn" };
         HashMap<String, Integer> pieceToIndex = new HashMap<>();
         pieceToIndex.put("king", 0);
         pieceToIndex.put("queen", 1);
@@ -202,11 +235,12 @@ public class ChessGUI {
         int index = pieceToIndex.get(name);
         return (color == 'w') ? whiteIconsPath[index] : blackIconsPath[index];
     }
-    public BufferedImage getImage(String pathString){
+
+    public BufferedImage getImage(String pathString) {
         BufferedImage img = null;
-        try{
+        try {
             img = ImageIO.read(getClass().getResourceAsStream(pathString + ".png"));
-        }catch(Exception e){
+        } catch (Exception e) {
             System.out.println(e.getMessage());
         }
         return img;
